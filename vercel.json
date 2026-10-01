@@ -1,1 +1,12 @@
-{"cleanUrls":true}
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "cleanUrls": true,
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "site-six-silk-58.vercel.app" }],
+      "destination": "https://skipthegame.site/:path*",
+      "statusCode": 301
+    }
+  ]
+}
