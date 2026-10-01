@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Sparks — Matches</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="app.css" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Inter, system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100dvh;
+      background-image:
+        radial-gradient(ellipse at 10% 0%, rgba(139,92,255,0.35), transparent 45%),
+        radial-gradient(ellipse at 90% 80%, rgba(45,226,230,0.15), transparent 40%);
+      background-attachment: fixed;
+    }
+    .phone { max-width: 390px; margin: 0 auto; min-height: 100dvh; padding: 12px 16px 100px; }
+    header { display: flex; align-items: center; justify-content: space-between; padding: 8px 0 16px; }
+    .back { color: var(--muted); text-decoration: none; font-size: 0.9rem; }
+    .title {
+      font-weight: 700; letter-spacing: 0.08em; font-size: 0.95rem;
+      background: linear-gradient(90deg, var(--violet), var(--cyan));
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .section {
+      background: var(--glass); border: 1px solid var(--border); border-radius: 16px; padding: 6px 14px;
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); margin-bottom: 12px;
+    }
+    .section-title { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.14em; color: var(--violet); margin: 10px 0 4px; }
+    .new-row { display: flex; gap: 12px; overflow-x: auto; padding: 8px 0 12px; }
+    .new-row a { text-decoration: none; color: var(--text); display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 0.72rem; min-width: 64px; text-align: center; }
+    .row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.06); text-decoration: none; color: var(--text); }
+    .row:last-child { border-bottom: none; }
+    .row .body { flex: 1; min-width: 0; }
+    .row .name { font-size: 0.95rem; font-weight: 600; }
+    .row .last { font-size: 0.8rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+    .row .when { font-size: 0.7rem; color: var(--muted); }
+    .row .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--pink); box-shadow: 0 0 10px var(--pink); }
+    .empty { text-align: center; padding: 40px 12px; color: var(--muted); line-height: 1.5; }
+    .empty .big { font-size: 2.2rem; margin-bottom: 10px; }
+    nav.bottom {
+      position: fixed; left: 50%; transform: translateX(-50%); bottom: 0; width: min(390px, 100%);
+      display: flex; justify-content: space-around; padding: 10px 8px calc(10px + env(safe-area-inset-bottom));
+      background: rgba(11,15,26,0.85); border-top: 1px solid var(--border); backdrop-filter: blur(20px);
+    }
+    nav.bottom a { text-decoration: none; color: var(--muted); font-size: 0.65rem; display: flex; flex-direction: column; align-items: center; gap: 4px; font-weight: 500; }
+    nav.bottom a.active { color: var(--violet); }
+    nav.bottom .ni { font-size: 1.2rem; }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <header>
+      <a class="back" href="index.html">← Home</a>
+      <div class="title">MATCHES</div>
+      <a class="back" href="smash-or-pass.html" title="Smash or Pass">🔥</a>
+    </header>
+    <div id="status"></div>
+    <div id="list"></div>
+  </div>
+
+  <nav class="bottom">
+    <a href="smash-or-pass.html"><span class="ni">🔥</span>Smash</a>
+    <a href="matches.html" class="active"><span class="ni">💬</span>Matches</a>
+    <a href="rooms.html"><span class="ni">🚪</span>Rooms</a>
+    <a href="profile.html"><span class="ni">👤</span>Profile</a>
+    <a href="index.html"><span class="ni">🏠</span>Home</a>
+  </nav>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="auth.js"></script>
+  <script src="sparks.js"></script>
+  <script>
+    const status = document.getElementById('status');
+    const list = document.getElementById('list');
+
+    function asProfile(m) {
+      return { id: m.other_id, display_name: m.other_name, avatar_url: m.other_avatar, is_admin: m.other_is_admin };
+    }
+
+    (async () => {
+      const session = await Sparks.requireSession(status);
+      if (!session) return;
+      const me = session.user;
+      const sb = Sparks.client();
+      const { data: matches, error } = await sb.rpc('my_matches');
+      if (error) return Sparks.showError(status, error);
+      if (!matches || !matches.length) {
+        list.innerHTML = '<div class="section"><div class="empty"><div class="big">⚡</div>No matches yet.<br>When you and someone both smash, you match and DMs unlock.<br><br><a class="sp-btn small" href="smash-or-pass.html">Start swiping</a></div></div>';
+        return;
+      }
+      // Last message per match
+      const ids = matches.map((m) => m.match_id);
+      const { data: msgs } = await sb.from('messages').select('match_id, sender, body, created_at')
+        .in('match_id', ids).order('created_at', { ascending: false }).limit(500);
+      const last = {};
+      (msgs || []).forEach((x) => { if (!last[x.match_id]) last[x.match_id] = x; });
+
+      const fresh = matches.filter((m) => !last[m.match_id]);
+      const talking = matches.filter((m) => last[m.match_id])
+        .sort((a, b) => new Date(last[b.match_id].created_at) - new Date(last[a.match_id].created_at));
+
+      let html = '';
+      if (fresh.length) {
+        html += '<div class="section"><div class="section-title">NEW MATCHES</div><div class="new-row">' +
+          fresh.map((m) => {
+            const p = asProfile(m);
+            return '<a href="dm-thread.html?match=' + m.match_id + '">' + Sparks.avatarHtml(p, 58) +
+              '<span>' + Sparks.nameHtml(p) + '</span></a>';
+          }).join('') + '</div></div>';
+      }
+      if (talking.length) {
+        html += '<div class="section"><div class="section-title">MESSAGES</div>' +
+          talking.map((m) => {
+            const p = asProfile(m);
+            const l = last[m.match_id];
+            const theirTurn = l.sender !== me.id;
+            return '<a class="row" href="dm-thread.html?match=' + m.match_id + '">' + Sparks.avatarHtml(p, 48) +
+              '<div class="body"><div class="name">' + Sparks.nameHtml(p) + '</div>' +
+              '<div class="last">' + (theirTurn ? '' : 'You: ') + Sparks.esc(l.body) + '</div></div>' +
+              '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px"><span class="when">' +
+              Sparks.timeAgo(l.created_at) + '</span>' + (theirTurn ? '<span class="dot"></span>' : '') + '</div></a>';
+          }).join('') + '</div>';
+      }
+      list.innerHTML = html;
+    })();
+  </script>
+</body>
+</html>

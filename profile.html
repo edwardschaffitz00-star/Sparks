@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Sparks — Your profile</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="app.css" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Inter, system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100dvh;
+      background-image:
+        radial-gradient(ellipse at 20% 0%, rgba(255,45,149,0.35), transparent 50%),
+        radial-gradient(ellipse at 80% 10%, rgba(139,92,255,0.35), transparent 45%),
+        radial-gradient(ellipse at 50% 100%, rgba(45,226,230,0.18), transparent 50%);
+      background-attachment: fixed;
+    }
+    .phone { max-width: 390px; margin: 0 auto; min-height: 100dvh; padding: 12px 16px 100px; }
+    header { display: flex; align-items: center; justify-content: space-between; padding: 8px 0 16px; }
+    .back { color: var(--muted); text-decoration: none; font-size: 0.9rem; }
+    .title {
+      font-weight: 700; letter-spacing: 0.08em; font-size: 0.95rem;
+      background: linear-gradient(90deg, var(--pink), var(--violet), var(--cyan));
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .card {
+      background: var(--glass); border: 1px solid var(--border); border-radius: 16px; padding: 18px;
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); margin-bottom: 12px;
+    }
+    .photo-wrap { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 6px; }
+    .photo {
+      width: 150px; height: 150px; border-radius: 50%; overflow: hidden; position: relative;
+      background: linear-gradient(135deg, #3a1a4a, #1a3a4a 50%, #4a1a3a);
+      border: 2px solid rgba(255,45,149,0.5); box-shadow: 0 0 36px rgba(255,45,149,0.3);
+      display: grid; place-items: center; color: rgba(255,255,255,0.35); font-size: 0.75rem; letter-spacing: 0.2em;
+    }
+    .photo img { width: 100%; height: 100%; object-fit: cover; }
+    .photo.admin { border-color: var(--lime); box-shadow: 0 0 36px rgba(182,255,59,0.35); }
+    .who { text-align: center; font-size: 1.15rem; font-weight: 700; }
+    label {
+      display: block; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.12em;
+      color: var(--muted); margin-bottom: 6px;
+    }
+    .field { margin-bottom: 14px; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    input, select, textarea {
+      width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border);
+      background: rgba(0,0,0,0.28); color: var(--text); font-size: 0.95rem; font-family: inherit; outline: none;
+    }
+    select option { background: #12182B; }
+    textarea { min-height: 96px; resize: vertical; }
+    input:focus, select:focus, textarea:focus { border-color: rgba(139,92,255,0.55); box-shadow: 0 0 0 3px rgba(139,92,255,0.2); }
+    input[disabled] { opacity: 0.6; }
+    .hint { color: var(--muted); font-size: 0.75rem; margin-top: 4px; }
+    #file { display: none; }
+    .full { width: 100%; }
+    nav.bottom {
+      position: fixed; left: 50%; transform: translateX(-50%); bottom: 0; width: min(390px, 100%);
+      display: flex; justify-content: space-around; padding: 10px 8px calc(10px + env(safe-area-inset-bottom));
+      background: rgba(11,15,26,0.85); border-top: 1px solid var(--border); backdrop-filter: blur(20px);
+    }
+    nav.bottom a { text-decoration: none; color: var(--muted); font-size: 0.65rem; display: flex; flex-direction: column; align-items: center; gap: 4px; font-weight: 500; }
+    nav.bottom a.active { color: var(--pink); text-shadow: 0 0 12px rgba(255,45,149,0.5); }
+    nav.bottom .ni { font-size: 1.2rem; }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <header>
+      <a class="back" href="index.html">← Home</a>
+      <div class="title">YOUR PROFILE</div>
+      <div style="width:48px"></div>
+    </header>
+
+    <div id="status"></div>
+
+    <div id="editor" style="display:none">
+      <div class="card">
+        <div class="photo-wrap">
+          <div class="photo" id="photo">PHOTO</div>
+          <div class="who" id="who"></div>
+          <button class="sp-btn ghost small" type="button" id="pick">📷 Upload photo</button>
+          <input type="file" id="file" accept="image/*" />
+          <div id="photo-msg"></div>
+        </div>
+      </div>
+
+      <form class="card" id="form">
+        <div class="field">
+          <label for="display_name">DISPLAY NAME</label>
+          <input id="display_name" maxlength="40" required />
+          <div class="hint" id="name-hint"></div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="age">AGE</label>
+            <input id="age" type="number" min="18" max="120" inputmode="numeric" />
+          </div>
+          <div class="field">
+            <label for="city">CITY</label>
+            <input id="city" maxlength="60" placeholder="Where you are" />
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="gender">I AM</label>
+            <select id="gender">
+              <option value="">—</option>
+              <option>Woman</option><option>Man</option><option>Non-binary</option>
+              <option>Trans woman</option><option>Trans man</option><option>Other</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="looking_for">LOOKING FOR</label>
+            <select id="looking_for">
+              <option value="">—</option>
+              <option>Women</option><option>Men</option><option>Everyone</option>
+              <option>Couples</option><option>Friends</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="bio">BIO</label>
+          <textarea id="bio" maxlength="500" placeholder="A few lines about you and your vibe"></textarea>
+        </div>
+        <button class="sp-btn full" type="submit" id="save">Save profile</button>
+        <div id="save-msg"></div>
+      </form>
+    </div>
+  </div>
+
+  <nav class="bottom">
+    <a href="smash-or-pass.html"><span class="ni">🔥</span>Smash</a>
+    <a href="matches.html"><span class="ni">💬</span>Matches</a>
+    <a href="rooms.html"><span class="ni">🚪</span>Rooms</a>
+    <a href="profile.html" class="active"><span class="ni">👤</span>Profile</a>
+    <a href="index.html"><span class="ni">🏠</span>Home</a>
+  </nav>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="auth.js"></script>
+  <script src="sparks.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const status = $('status');
+    let me = null, profile = null;
+
+    function renderPhoto() {
+      const ph = $('photo');
+      ph.classList.toggle('admin', !!profile.is_admin);
+      ph.innerHTML = profile.avatar_url
+        ? '<img src="' + Sparks.esc(profile.avatar_url) + '" alt="Your photo">'
+        : 'PHOTO';
+      $('who').innerHTML = Sparks.nameHtml(profile);
+    }
+
+    // Shrink the photo in the browser before upload (max 1080px JPEG).
+    function resizeImage(file) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+          const max = 1080;
+          const scale = Math.min(1, max / Math.max(img.width, img.height));
+          const c = document.createElement('canvas');
+          c.width = Math.round(img.width * scale);
+          c.height = Math.round(img.height * scale);
+          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+          URL.revokeObjectURL(url);
+          c.toBlob((b) => (b ? resolve(b) : reject(new Error('Could not read that image.'))), 'image/jpeg', 0.85);
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('That file is not an image we can read.')); };
+        img.src = url;
+      });
+    }
+
+    async function upload(file) {
+      const sb = Sparks.client();
+      const msg = $('photo-msg');
+      $('pick').disabled = true;
+      Sparks.notice(msg, 'Uploading…');
+      try {
+        const blob = await resizeImage(file);
+        const path = me.id + '/avatar-' + Date.now() + '.jpg';
+        const { error: upErr } = await sb.storage.from('avatars').upload(path, blob, { contentType: 'image/jpeg', upsert: true });
+        if (upErr) throw upErr;
+        const { data: pub } = sb.storage.from('avatars').getPublicUrl(path);
+        const { error: dbErr } = await sb.from('profiles').update({ avatar_url: pub.publicUrl }).eq('id', me.id);
+        if (dbErr) throw dbErr;
+        // Best-effort cleanup of older photos in my folder.
+        const { data: files } = await sb.storage.from('avatars').list(me.id);
+        const old = (files || []).map((f) => me.id + '/' + f.name).filter((p) => p !== path);
+        if (old.length) sb.storage.from('avatars').remove(old);
+        profile.avatar_url = pub.publicUrl;
+        renderPhoto();
+        Sparks.notice(msg, 'Photo updated ✨', 'ok');
+      } catch (err) {
+        Sparks.showError(msg, err);
+      } finally {
+        $('pick').disabled = false;
+        $('file').value = '';
+      }
+    }
+
+    async function init() {
+      me = (await Sparks.requireSession(status))?.user;
+      if (!me) return;
+      const res = await Sparks.myProfile(me.id);
+      if (res.error && !res.missing) return Sparks.showError(status, res.error);
+      if (res.missing) return Sparks.notice(status, Sparks.esc(Sparks.SETUP_MSG));
+      profile = res.profile;
+      if (!profile) {
+        const { data, error } = await Sparks.client().from('profiles')
+          .insert({ id: me.id, display_name: (me.email || 'member').split('@')[0] }).select('*').single();
+        if (error) return Sparks.showError(status, error);
+        profile = data;
+      }
+      if (profile.is_banned) Sparks.notice(status, 'Your account is suspended. Contact support if you think this is a mistake.', 'err');
+      $('display_name').value = profile.is_admin ? Sparks.ADMIN_NAME : (profile.display_name || '');
+      if (profile.is_admin) {
+        $('display_name').disabled = true;
+        $('name-hint').textContent = 'Admins always appear as “The Algorithm” with an ADMIN badge.';
+      }
+      $('age').value = profile.age || '';
+      $('city').value = profile.city || '';
+      $('gender').value = profile.gender || '';
+      $('looking_for').value = profile.looking_for || '';
+      $('bio').value = profile.bio || '';
+      renderPhoto();
+      $('editor').style.display = 'block';
+    }
+
+    $('pick').addEventListener('click', () => $('file').click());
+    $('file').addEventListener('change', (e) => { const f = e.target.files[0]; if (f) upload(f); });
+
+    $('form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const msg = $('save-msg');
+      const age = parseInt($('age').value, 10);
+      if ($('age').value && (isNaN(age) || age < 18)) return Sparks.notice(msg, 'You must be 18 or older.', 'err');
+      const patch = {
+        age: $('age').value ? age : null,
+        city: $('city').value.trim() || null,
+        gender: $('gender').value || null,
+        looking_for: $('looking_for').value || null,
+        bio: $('bio').value.trim() || null,
+      };
+      if (!profile.is_admin) patch.display_name = $('display_name').value.trim() || profile.display_name;
+      $('save').disabled = true;
+      const { data, error } = await Sparks.client().from('profiles').update(patch).eq('id', me.id).select('*').single();
+      $('save').disabled = false;
+      if (error) return Sparks.showError(msg, error);
+      profile = data;
+      renderPhoto();
+      Sparks.notice(msg, 'Saved ✓ <a href="smash-or-pass.html">Start swiping →</a>', 'ok');
+    });
+
+    init();
+  </script>
+</body>
+</html>

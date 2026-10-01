@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Sparks — Rooms</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:#0B0F1A; --glass:rgba(255,255,255,0.06); --border:rgba(255,255,255,0.12);
+      --text:#fff; --muted:#B8C0D9; --pink:#FF2D95; --violet:#8B5CFF; --cyan:#2DE2E6; --orange:#FF7A18; --lime:#B6FF3B;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100dvh;
+      background-image:radial-gradient(ellipse at 20% 0%,rgba(139,92,255,.4),transparent 45%),radial-gradient(ellipse at 80% 100%,rgba(45,226,230,.2),transparent 45%)}
+    .phone{max-width:390px;margin:0 auto;min-height:100dvh;padding:12px 16px 100px}
+    header{display:flex;align-items:center;justify-content:space-between;padding:8px 0 12px}
+    .back{color:var(--muted);text-decoration:none}
+    .logo{font-weight:700;letter-spacing:.1em;background:linear-gradient(90deg,var(--violet),var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
+    .tabs{display:flex;gap:8px;margin-bottom:14px}
+    .tab{flex:1;padding:10px;border-radius:999px;border:1px solid var(--border);background:var(--glass);color:var(--muted);font-weight:600;font-size:.85rem;cursor:pointer}
+    .tab.on{color:#fff;background:linear-gradient(135deg,var(--violet),var(--pink));border-color:transparent;box-shadow:0 0 20px rgba(139,92,255,.35)}
+    .panel{display:none}.panel.on{display:block}
+    .filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+    .chip{padding:6px 12px;border-radius:999px;border:1px solid var(--border);background:rgba(0,0,0,.25);color:var(--muted);font-size:.75rem;cursor:pointer}
+    .chip.on{border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 12px rgba(45,226,230,.25)}
+    .card{background:var(--glass);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:10px;backdrop-filter:blur(12px);cursor:pointer;transition:transform .15s,box-shadow .15s}
+    .card:active{transform:scale(.98)}
+    .card:hover{box-shadow:0 0 24px rgba(139,92,255,.2)}
+    .card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+    .card h3{font-size:1rem;margin-bottom:4px}
+    .card p{font-size:.8rem;color:var(--muted);margin-bottom:8px}
+    .tags{display:flex;flex-wrap:wrap;gap:4px}
+    .tag{font-size:.65rem;padding:3px 8px;border-radius:999px;background:rgba(139,92,255,.25);color:#e8deff}
+    .meta{display:flex;gap:10px;align-items:center;margin-top:10px;font-size:.75rem;color:var(--muted)}
+    .dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);animation:pulse 1.6s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    .badge{font-size:.65rem;font-weight:700;padding:4px 8px;border-radius:999px;background:rgba(255,45,149,.2);color:var(--pink);border:1px solid rgba(255,45,149,.4)}
+    .badge.open{background:rgba(182,255,59,.12);color:var(--lime);border-color:rgba(182,255,59,.35)}
+    .create{width:100%;margin-top:8px;padding:14px;border:none;border-radius:14px;font-weight:700;color:#fff;cursor:pointer;background:linear-gradient(135deg,var(--violet),var(--pink));box-shadow:0 8px 28px rgba(139,92,255,.35)}
+    .toast{position:fixed;left:50%;transform:translateX(-50%) translateY(20px);bottom:90px;opacity:0;padding:12px 18px;border-radius:12px;background:rgba(182,255,59,.15);border:1px solid rgba(182,255,59,.4);color:var(--lime);font-size:.85rem;transition:.25s;pointer-events:none;z-index:10;width:min(340px,90%)}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:20;align-items:flex-end;justify-content:center}
+    .modal.on{display:flex}
+    .sheet{width:min(390px,100%);background:#12182B;border:1px solid var(--border);border-radius:20px 20px 0 0;padding:20px;padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+    .sheet h2{margin-bottom:8px}.sheet p{color:var(--muted);font-size:.85rem;margin-bottom:16px}
+    .sheet .actions{display:flex;gap:8px}
+    .sheet button{flex:1;padding:12px;border-radius:12px;border:none;font-weight:600;cursor:pointer}
+    .sheet .primary{background:linear-gradient(135deg,var(--violet),var(--pink));color:#fff}
+    .sheet .ghost{background:var(--glass);color:var(--muted);border:1px solid var(--border)}
+    nav.bottom{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:min(390px,100%);display:flex;justify-content:space-around;padding:10px 8px calc(10px + env(safe-area-inset-bottom));background:rgba(11,15,26,.9);border-top:1px solid var(--border);backdrop-filter:blur(20px)}
+    nav.bottom a{text-decoration:none;color:var(--muted);font-size:.65rem;display:flex;flex-direction:column;align-items:center;gap:4px;font-weight:500}
+    nav.bottom a.active{color:var(--violet)}
+    nav.bottom .ni{font-size:1.2rem}
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <header>
+      <a class="back" href="index.html">←</a>
+      <div class="logo">ROOMS</div>
+      <button class="chip" id="btnCreate" style="border:none;background:linear-gradient(135deg,var(--violet),var(--pink));color:#fff">+ New</button>
+    </header>
+    <div class="tabs">
+      <button class="tab on" data-tab="mine">My rooms</button>
+      <button class="tab" data-tab="discover">Discover</button>
+    </div>
+
+    <div class="panel on" id="mine">
+      <div class="card" data-room="Lane County After Dark" data-status="joined">
+        <div class="card-top"><h3>Lane County After Dark</h3><span class="badge open">Joined</span></div>
+        <p>Local kink chat · keep it consensual</p>
+        <div class="tags"><span class="tag">Local</span><span class="tag">Mixed</span></div>
+        <div class="meta"><span class="dot"></span> 6 online · 28 members</div>
+      </div>
+      <div class="card" data-room="Foot Worship Lounge" data-status="joined">
+        <div class="card-top"><h3>Foot Worship Lounge</h3><span class="badge open">Joined</span></div>
+        <p>Soft / spicy · no unsolicited pics</p>
+        <div class="tags"><span class="tag">Feet</span><span class="tag">Worship</span></div>
+        <div class="meta"><span class="dot"></span> 3 online · 14 members</div>
+      </div>
+    </div>
+
+    <div class="panel" id="discover">
+      <div class="filters">
+        <button class="chip on" data-filter="all">All</button>
+        <button class="chip" data-filter="open">Open</button>
+        <button class="chip" data-filter="request">Request</button>
+        <button class="chip" data-filter="nearby">Nearby</button>
+      </div>
+      <div class="card room-card" data-vis="open nearby" data-room="Springfield Play Ideas" data-action="join">
+        <div class="card-top"><h3>Springfield Play Ideas</h3><span class="badge open">Open</span></div>
+        <p>Brainstorm scenes · SF / Eugene</p>
+        <div class="tags"><span class="tag">Nearby</span><span class="tag">Negotiation</span></div>
+        <div class="meta"><span class="dot"></span> 11 online · 64 members</div>
+      </div>
+      <div class="card room-card" data-vis="request" data-room="VIP Pet Play" data-action="request">
+        <div class="card-top"><h3>VIP Pet Play</h3><span class="badge">Request</span></div>
+        <p>Host approves · rules pinned</p>
+        <div class="tags"><span class="tag">Pet</span><span class="tag">Private</span></div>
+        <div class="meta">4 online · 19 members</div>
+      </div>
+      <div class="card room-card" data-vis="open nearby" data-room="Auction Watch Party" data-action="join">
+        <div class="card-top"><h3>Auction Watch Party</h3><span class="badge open">Open</span></div>
+        <p>Cheer on fake people auctions 🔥</p>
+        <div class="tags"><span class="tag">Auction</span><span class="tag">Fun</span></div>
+        <div class="meta"><span class="dot"></span> 22 online · 91 members</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div class="modal" id="modal">
+    <div class="sheet">
+      <h2 id="modalTitle">Room</h2>
+      <p id="modalBody">Join this room?</p>
+      <div class="actions">
+        <button class="ghost" id="modalCancel">Cancel</button>
+        <button class="primary" id="modalOk">Join</button>
+      </div>
+    </div>
+  </div>
+
+  <nav class="bottom">
+    <a href="smash-or-pass.html"><span class="ni">🔥</span>Smash</a>
+    <a href="matches.html"><span class="ni">💬</span>Matches</a>
+    <a href="rooms.html" class="active"><span class="ni">🚪</span>Rooms</a>
+    <a href="profile.html"><span class="ni">👤</span>Profile</a>
+    <a href="index.html"><span class="ni">🏠</span>Home</a>
+  </nav>
+  <script>
+    const toast = (msg) => { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2200); };
+    document.querySelectorAll('.tab').forEach(tab=>{
+      tab.onclick=()=>{
+        document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+        document.querySelectorAll('.panel').forEach(x=>x.classList.remove('on'));
+        tab.classList.add('on');
+        document.getElementById(tab.dataset.tab).classList.add('on');
+      };
+    });
+    document.querySelectorAll('.filters .chip').forEach(chip=>{
+      chip.onclick=()=>{
+        document.querySelectorAll('.filters .chip').forEach(c=>c.classList.remove('on'));
+        chip.classList.add('on');
+        const f=chip.dataset.filter;
+        document.querySelectorAll('.room-card').forEach(card=>{
+          card.style.display = (f==='all'||card.dataset.vis.includes(f))?'':'none';
+        });
+      };
+    });
+    let pending=null;
+    const modal=document.getElementById('modal');
+    document.querySelectorAll('.card').forEach(card=>{
+      card.onclick=()=>{
+        const name=card.dataset.room;
+        const action=card.dataset.action||'open';
+        pending={name,action,card};
+        document.getElementById('modalTitle').textContent=name;
+        document.getElementById('modalBody').textContent=
+          action==='request'?'Request to join? Host will approve.':
+          action==='join'?'Join this open room now?':'Open room chat (demo).';
+        document.getElementById('modalOk').textContent=action==='request'?'Request':action==='join'?'Join':'Open';
+        modal.classList.add('on');
+      };
+    });
+    document.getElementById('modalCancel').onclick=()=>modal.classList.remove('on');
+    document.getElementById('modalOk').onclick=()=>{
+      modal.classList.remove('on');
+      if(!pending)return;
+      if(pending.action==='join'){
+        toast('Joined “'+pending.name+'” — you’re in ⚡');
+        const b=pending.card.querySelector('.badge'); if(b){b.textContent='Joined';b.classList.add('open');}
+        pending.card.dataset.action='open';
+      } else if(pending.action==='request'){
+        toast('Request sent for “'+pending.name+'”');
+        const b=pending.card.querySelector('.badge'); if(b){b.textContent='Pending';}
+      } else toast('Opened “'+pending.name+'” (demo chat)');
+      pending=null;
+    };
+    document.getElementById('btnCreate').onclick=(e)=>{e.stopPropagation();toast('Create room — wire to form next');};
+    modal.onclick=(e)=>{if(e.target===modal)modal.classList.remove('on');};
+  </script>
+</body>
+</html>

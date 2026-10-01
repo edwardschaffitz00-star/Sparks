@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="robots" content="noindex" />
+  <title>Sparks — Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="app.css" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Inter, system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100dvh;
+      background-image:
+        radial-gradient(ellipse at 15% 0%, rgba(182,255,59,0.14), transparent 40%),
+        radial-gradient(ellipse at 85% 10%, rgba(139,92,255,0.35), transparent 45%),
+        radial-gradient(ellipse at 50% 100%, rgba(45,226,230,0.15), transparent 50%);
+      background-attachment: fixed;
+    }
+    .wrap { max-width: 1000px; margin: 0 auto; padding: 12px 14px 60px; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0 14px; flex-wrap: wrap; }
+    .logo {
+      font-weight: 700; letter-spacing: 0.12em; font-size: 1.1rem; text-decoration: none;
+      background: linear-gradient(90deg, var(--lime), var(--cyan), var(--violet));
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .me { font-size: 0.85rem; color: var(--muted); }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-bottom: 12px; }
+    .stat { background: var(--glass); border: 1px solid var(--border); border-radius: 14px; padding: 12px; }
+    .stat .n { font-size: 1.4rem; font-weight: 700; color: var(--cyan); }
+    .stat .l { font-size: 0.7rem; letter-spacing: 0.12em; color: var(--muted); font-weight: 600; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    .tab { padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--glass); color: var(--muted); font-weight: 600; font-size: 0.85rem; cursor: pointer; font-family: inherit; }
+    .tab.on { color: #fff; background: linear-gradient(135deg, var(--violet), var(--pink)); border-color: transparent; box-shadow: 0 0 20px rgba(139,92,255,0.35); }
+    .tab .c { margin-left: 6px; padding: 1px 7px; border-radius: 999px; background: var(--pink); color: #fff; font-size: 0.7rem; }
+    .panel { display: none; background: var(--glass); border: 1px solid var(--border); border-radius: 16px; padding: 12px; backdrop-filter: blur(16px); }
+    .panel.on { display: block; }
+    .toolbar { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; align-items: center; }
+    .toolbar input, .toolbar select {
+      flex: 1; min-width: 160px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border);
+      background: rgba(0,0,0,0.28); color: var(--text); font-size: 0.9rem; font-family: inherit; outline: none;
+    }
+    .toolbar select option { background: #12182B; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th { text-align: left; font-size: 0.66rem; letter-spacing: 0.12em; color: var(--muted); font-weight: 600; padding: 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    td { padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,0.06); vertical-align: middle; }
+    tr.banned td { opacity: 0.65; }
+    .usercell { display: flex; align-items: center; gap: 10px; min-width: 180px; }
+    .usercell .em { font-size: 0.75rem; color: var(--muted); }
+    .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.68rem; font-weight: 700; }
+    .pill.ok { background: rgba(182,255,59,0.12); color: var(--lime); border: 1px solid rgba(182,255,59,0.35); }
+    .pill.bad { background: rgba(255,77,109,0.15); color: #ffb3c1; border: 1px solid rgba(255,77,109,0.4); }
+    .pill.wait { background: rgba(255,122,24,0.15); color: #ffc79a; border: 1px solid rgba(255,122,24,0.4); }
+    .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .msgbody { max-width: 420px; white-space: pre-wrap; word-wrap: break-word; }
+    .muted { color: var(--muted); font-size: 0.75rem; }
+    a.lnk { color: var(--cyan); text-decoration: none; font-weight: 600; }
+    #toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 20; width: min(420px, 92%); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <a class="logo" href="index.html">SPARKS · ADMIN</a>
+      <div class="me" id="me"></div>
+    </header>
+    <div id="status"><div class="sp-notice">Checking admin access…</div></div>
+
+    <div id="app" style="display:none">
+      <div class="stats" id="stats"></div>
+      <div class="tabs">
+        <button class="tab on" data-tab="users">Users</button>
+        <button class="tab" data-tab="messages">Messages</button>
+        <button class="tab" data-tab="reports">Reports <span class="c" id="open-count" style="display:none"></span></button>
+      </div>
+
+      <div class="panel on" id="users">
+        <div class="toolbar">
+          <input id="user-q" placeholder="Search name, email or city…" />
+          <select id="user-filter">
+            <option value="all">All users</option>
+            <option value="active">Active</option>
+            <option value="banned">Banned</option>
+            <option value="unconfirmed">Unconfirmed email</option>
+            <option value="noprofile">No profile</option>
+          </select>
+          <button class="sp-btn ghost small" id="reload-users" type="button">↻ Refresh</button>
+        </div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>USER</th><th>STATUS</th><th>JOINED</th><th>LAST LOGIN</th><th>ACTIONS</th></tr></thead>
+          <tbody id="user-rows"></tbody>
+        </table></div>
+      </div>
+
+      <div class="panel" id="messages">
+        <div class="toolbar">
+          <input id="msg-q" placeholder="Search message text…" />
+          <select id="msg-user"><option value="">All senders</option></select>
+          <button class="sp-btn ghost small" id="reload-msgs" type="button">↻ Refresh</button>
+        </div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>WHEN</th><th>FROM</th><th>TO</th><th>MESSAGE</th><th></th></tr></thead>
+          <tbody id="msg-rows"></tbody>
+        </table></div>
+        <p class="muted" style="margin-top:8px">Showing the latest 300 matching messages.</p>
+      </div>
+
+      <div class="panel" id="reports">
+        <div class="toolbar">
+          <select id="rep-filter">
+            <option value="open">Open reports</option>
+            <option value="all">All reports</option>
+            <option value="resolved">Resolved</option>
+          </select>
+          <button class="sp-btn ghost small" id="reload-reports" type="button">↻ Refresh</button>
+        </div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>WHEN</th><th>REPORTER</th><th>REPORTED</th><th>REASON</th><th>STATUS</th><th>ACTIONS</th></tr></thead>
+          <tbody id="rep-rows"></tbody>
+        </table></div>
+      </div>
+    </div>
+  </div>
+  <div id="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="auth.js"></script>
+  <script src="sparks.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const E = Sparks.esc;
+    let sb, me, users = [], byId = {}, matchesById = {};
+
+    function toast(text, kind) {
+      Sparks.notice($('toast'), E(text), kind || 'ok');
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => { $('toast').innerHTML = ''; }, 3200);
+    }
+    function fail(err) { toast(Sparks.isMissingSchema(err) ? Sparks.SETUP_MSG : (err.message || String(err)), 'err'); }
+    function fmt(d) { return d ? new Date(d).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '—'; }
+    function who(id) {
+      const u = byId[id];
+      if (!id) return '<span class="muted">(deleted)</span>';
+      if (!u) return '<span class="muted">' + E(id.slice(0, 8)) + '…</span>';
+      return Sparks.nameHtml(u) + (u.is_admin ? '' : '<div class="muted">' + E(u.email || '') + '</div>');
+    }
+
+    // ---------- USERS ----------
+    async function loadUsers() {
+      let { data, error } = await sb.rpc('admin_list_users');
+      if (error) {
+        // Fallback (chunk 4 not run yet): profiles only, no emails.
+        const res = await sb.from('profiles').select('*').order('created_at', { ascending: false });
+        if (res.error) throw res.error;
+        data = res.data.map((p) => Object.assign({ email: "", email_confirmed: true, has_profile: true }, p));
+        toast('Emails unavailable until the admin SQL (chunk 4) is installed.', 'err');
+      }
+      users = (data || []).map((u) => Object.assign({ has_profile: true }, u));
+      byId = {};
+      users.forEach((u) => { byId[u.id] = u; });
+      renderUsers();
+      renderStats();
+      const sel = $('msg-user');
+      const cur = sel.value;
+      sel.innerHTML = '<option value="">All senders</option>' + users.filter((u) => u.has_profile)
+        .map((u) => '<option value="' + u.id + '">' + E(Sparks.displayName(u)) + (u.email ? ' (' + E(u.email) + ')' : '') + '</option>').join('');
+      sel.value = cur;
+    }
+
+    function renderUsers() {
+      const q = $('user-q').value.trim().toLowerCase();
+      const f = $('user-filter').value;
+      const rows = users.filter((u) => {
+        if (f === 'active' && (u.is_banned || !u.has_profile)) return false;
+        if (f === 'banned' && !u.is_banned) return false;
+        if (f === 'unconfirmed' && u.email_confirmed) return false;
+        if (f === 'noprofile' && u.has_profile) return false;
+        if (!q) return true;
+        return [u.display_name, u.email, u.city].some((x) => (x || '').toLowerCase().includes(q));
+      });
+      $('user-rows').innerHTML = rows.map((u) => {
+        const self = u.id === me.id;
+        const st = !u.has_profile ? '<span class="pill wait">No profile</span>'
+          : u.is_banned ? '<span class="pill bad">Banned</span>'
+          : '<span class="pill ok">Active</span>';
+        const conf = u.email_confirmed === false ? ' <span class="pill wait">Unconfirmed</span>' : '';
+        const acts = self ? '<span class="muted">This is you</span>' : [
+          u.has_profile ? (u.is_banned
+            ? '<button class="sp-btn ghost small" data-act="unban" data-id="' + u.id + '">Unban</button>'
+            : '<button class="sp-btn danger small" data-act="ban" data-id="' + u.id + '">Ban</button>') : '',
+          '<button class="sp-btn ghost small" data-act="msgs" data-id="' + u.id + '">Messages</button>',
+          u.has_profile ? '<button class="sp-btn danger small" data-act="delete" data-id="' + u.id + '">Delete profile</button>' : '',
+          u.avatar_url ? '<button class="sp-btn ghost small" data-act="nophoto" data-id="' + u.id + '">Remove photo</button>' : '',
+        ].join('');
+        return '<tr class="' + (u.is_banned ? 'banned' : '') + '"><td><div class="usercell">' + Sparks.avatarHtml(u, 38) +
+          '<div><div>' + Sparks.nameHtml(u) + (u.age ? ', ' + E(u.age) : '') + '</div><div class="em">' + E(u.email || '') +
+          (u.city ? ' · ' + E(u.city) : '') + '</div></div></div></td><td>' + st + conf + '</td><td>' + fmt(u.created_at) +
+          '</td><td>' + fmt(u.last_sign_in_at) + '</td><td><div class="actions">' + acts + '</div></td></tr>';
+      }).join('') || '<tr><td colspan="5" class="muted">No users match.</td></tr>';
+    }
+
+    async function renderStats() {
+      const count = async (t, fn) => {
+        let q = sb.from(t).select('*', { count: 'exact', head: true });
+        if (fn) q = fn(q);
+        const { count: c } = await q;
+        return c == null ? '—' : c;
+      };
+      const [m, msg, rep] = await Promise.all([count('matches'), count('messages'), count('reports', (q) => q.eq('resolved', false))]);
+      const banned = users.filter((u) => u.is_banned).length;
+      $('stats').innerHTML = [
+        ['USERS', users.length], ['BANNED', banned], ['MATCHES', m], ['MESSAGES', msg], ['OPEN REPORTS', rep],
+      ].map(([l, n]) => '<div class="stat"><div class="n">' + n + '</div><div class="l">' + l + '</div></div>').join('');
+      $('open-count').style.display = rep && rep !== '—' ? 'inline' : 'none';
+      $('open-count').textContent = rep;
+    }
+
+    async function setBan(id, banned) {
+      const u = byId[id];
+      if (!confirm((banned ? 'Ban ' : 'Unban ') + Sparks.displayName(u) + (u.email ? ' (' + u.email + ')' : '') + '?')) return;
+      let { error } = await sb.rpc('admin_set_ban', { target: id, banned });
+      if (error && Sparks.isMissingSchema(error)) {
+        ({ error } = await sb.from('profiles').update({ is_banned: banned }).eq('id', id));
+      }
+      if (error) return fail(error);
+      toast(banned ? 'User banned.' : 'User unbanned.');
+      loadUsers();
+    }
+
+    async function deleteProfile(id) {
+      const u = byId[id];
+      const label = Sparks.displayName(u) + (u.email ? ' (' + u.email + ')' : '');
+      if (!confirm('Permanently delete the profile of ' + label + '?\n\nThis also deletes their swipes, matches and messages. It cannot be undone. Ban first if you want to keep them from logging back in.')) return;
+      // remove their photos (best effort)
+      const { data: files } = await sb.storage.from('avatars').list(id);
+      if (files && files.length) await sb.storage.from('avatars').remove(files.map((f) => id + '/' + f.name));
+      const { error } = await sb.from('profiles').delete().eq('id', id);
+      if (error) return fail(error);
+      toast('Profile deleted.');
+      loadUsers();
+    }
+
+    async function removePhoto(id) {
+      if (!confirm('Remove the photo of ' + Sparks.displayName(byId[id]) + '?')) return;
+      const { data: files } = await sb.storage.from('avatars').list(id);
+      if (files && files.length) await sb.storage.from('avatars').remove(files.map((f) => id + '/' + f.name));
+      const { error } = await sb.from('profiles').update({ avatar_url: null }).eq('id', id);
+      if (error) return fail(error);
+      toast('Photo removed.');
+      loadUsers();
+    }
+
+    // ---------- MESSAGES ----------
+    async function loadMessages() {
+      let q = sb.from('messages').select('id, match_id, sender, body, created_at').order('created_at', { ascending: false }).limit(300);
+      const uid = $('msg-user').value;
+      const text = $('msg-q').value.trim();
+      if (uid) {
+        // messages in any conversation this user is part of
+        const { data: ms } = await sb.from('matches').select('id').or('user_a.eq.' + uid + ',user_b.eq.' + uid);
+        const ids = (ms || []).map((m) => m.id);
+        if (!ids.length) { $('msg-rows').innerHTML = '<tr><td colspan="5" class="muted">No conversations for this user.</td></tr>'; return; }
+        q = q.in('match_id', ids);
+      }
+      if (text) q = q.ilike('body', '%' + text.replace(/[%_]/g, '') + '%');
+      const { data, error } = await q;
+      if (error) { $('msg-rows').innerHTML = ''; return fail(error); }
+      const need = [...new Set((data || []).map((m) => m.match_id).filter((id) => !matchesById[id]))];
+      if (need.length) {
+        const { data: ms } = await sb.from('matches').select('id, user_a, user_b').in('id', need);
+        (ms || []).forEach((m) => { matchesById[m.id] = m; });
+      }
+      $('msg-rows').innerHTML = (data || []).map((m) => {
+        const mt = matchesById[m.match_id];
+        const to = mt ? (mt.user_a === m.sender ? mt.user_b : mt.user_a) : null;
+        return '<tr><td class="muted" style="white-space:nowrap">' + fmt(m.created_at) + '</td><td>' + who(m.sender) + '</td><td>' + who(to) +
+          '</td><td class="msgbody">' + E(m.body) + '</td><td><div class="actions">' +
+          '<a class="sp-btn ghost small" href="dm-thread.html?match=' + m.match_id + '" target="_blank" rel="noopener">Thread</a>' +
+          '<button class="sp-btn danger small" data-act="delmsg" data-id="' + m.id + '">Delete</button></div></td></tr>';
+      }).join('') || '<tr><td colspan="5" class="muted">No messages.</td></tr>';
+    }
+
+    async function deleteMessage(id) {
+      if (!confirm('Delete this message for everyone?')) return;
+      const { error } = await sb.from('messages').delete().eq('id', id);
+      if (error) return fail(error);
+      toast('Message deleted.');
+      loadMessages();
+      renderStats();
+    }
+
+    // ---------- REPORTS ----------
+    async function loadReports() {
+      let q = sb.from('reports').select('*').order('created_at', { ascending: false }).limit(300);
+      const f = $('rep-filter').value;
+      if (f === 'open') q = q.eq('resolved', false);
+      if (f === 'resolved') q = q.eq('resolved', true);
+      const { data, error } = await q;
+      if (error) { $('rep-rows').innerHTML = ''; return fail(error); }
+      $('rep-rows').innerHTML = (data || []).map((r) => {
+        const target = byId[r.reported];
+        return '<tr><td class="muted" style="white-space:nowrap">' + fmt(r.created_at) + '</td><td>' + who(r.reporter) + '</td><td>' + who(r.reported) +
+          '</td><td class="msgbody">' + E(r.reason) + '</td><td>' + (r.resolved ? '<span class="pill ok">Resolved</span>' : '<span class="pill wait">Open</span>') +
+          '</td><td><div class="actions">' +
+          (r.resolved ? '<button class="sp-btn ghost small" data-act="reopen" data-id="' + r.id + '">Reopen</button>'
+                      : '<button class="sp-btn ghost small" data-act="resolve" data-id="' + r.id + '">Resolve</button>') +
+          (target && !target.is_banned && r.reported !== me.id ? '<button class="sp-btn danger small" data-act="ban" data-id="' + r.reported + '">Ban user</button>' : '') +
+          (r.reported ? '<button class="sp-btn ghost small" data-act="msgs" data-id="' + r.reported + '">Messages</button>' : '') +
+          '<button class="sp-btn danger small" data-act="delrep" data-id="' + r.id + '">Delete</button></div></td></tr>';
+      }).join('') || '<tr><td colspan="6" class="muted">No reports. 🎉</td></tr>';
+    }
+
+    async function setResolved(id, resolved) {
+      const { error } = await sb.from('reports').update({ resolved }).eq('id', id);
+      if (error) return fail(error);
+      loadReports(); renderStats();
+    }
+    async function deleteReport(id) {
+      if (!confirm('Delete this report?')) return;
+      const { error } = await sb.from('reports').delete().eq('id', id);
+      if (error) return fail(error);
+      loadReports(); renderStats();
+    }
+
+    function showTab(name) {
+      document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('on', t.dataset.tab === name));
+      document.querySelectorAll('.panel').forEach((p) => p.classList.toggle('on', p.id === name));
+      if (name === 'messages') loadMessages();
+      if (name === 'reports') loadReports();
+    }
+
+    document.addEventListener('click', (e) => {
+      const tab = e.target.closest('.tab');
+      if (tab) return showTab(tab.dataset.tab);
+      const b = e.target.closest('[data-act]');
+      if (!b) return;
+      const id = b.dataset.id;
+      ({
+        ban: () => setBan(id, true),
+        unban: () => setBan(id, false),
+        delete: () => deleteProfile(id),
+        nophoto: () => removePhoto(id),
+        msgs: () => { $('msg-user').value = id; $('msg-q').value = ''; showTab('messages'); },
+        delmsg: () => deleteMessage(Number(id)),
+        resolve: () => setResolved(Number(id), true),
+        reopen: () => setResolved(Number(id), false),
+        delrep: () => deleteReport(Number(id)),
+      }[b.dataset.act] || (() => {}))();
+    });
+    $('user-q').addEventListener('input', renderUsers);
+    $('user-filter').addEventListener('change', renderUsers);
+    $('reload-users').addEventListener('click', () => loadUsers().catch(fail));
+    $('reload-msgs').addEventListener('click', loadMessages);
+    $('msg-user').addEventListener('change', loadMessages);
+    let tq; $('msg-q').addEventListener('input', () => { clearTimeout(tq); tq = setTimeout(loadMessages, 350); });
+    $('rep-filter').addEventListener('change', loadReports);
+    $('reload-reports').addEventListener('click', loadReports);
+
+    (async () => {
+      const status = $('status');
+      const session = await Sparks.requireSession(status);
+      if (!session) { setTimeout(() => location.replace('login.html?next=' + encodeURIComponent('/admin')), 1500); return; }
+      me = session.user;
+      sb = Sparks.client();
+      const res = await Sparks.myProfile(me.id);
+      if (res.missing) {
+        Sparks.notice(status, 'The admin database update has not been installed yet, so admin access cannot be checked. Taking you home…');
+        setTimeout(() => location.replace('index.html'), 4000);
+        return;
+      }
+      if (res.error) return Sparks.showError(status, res.error);
+      if (!res.profile || !res.profile.is_admin || res.profile.is_banned) {
+        Sparks.notice(status, 'Admins only. Taking you home…', 'err');
+        setTimeout(() => location.replace('index.html'), 900);
+        return;
+      }
+      $('me').innerHTML = 'Signed in as ' + Sparks.nameHtml(res.profile) + ' · <a class="lnk" href="index.html">Back to app</a>';
+      status.innerHTML = '';
+      $('app').style.display = 'block';
+      try { await loadUsers(); } catch (err) { fail(err); }
+    })();
+  </script>
+</body>
+</html>

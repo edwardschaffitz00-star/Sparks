@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Sparks — Smash or Pass</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="app.css" />
+  <style>
+    :root {
+      --bg: #0B0F1A; --glass: rgba(255,255,255,0.06); --border: rgba(255,255,255,0.12);
+      --text: #fff; --muted: #B8C0D9; --pink: #FF2D95; --violet: #8B5CFF;
+      --cyan: #2DE2E6; --orange: #FF7A18; --lime: #B6FF3B;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Inter, system-ui, sans-serif; background: var(--bg); color: var(--text);
+      min-height: 100dvh;
+      background-image:
+        radial-gradient(ellipse at 30% 0%, rgba(255,45,149,0.4), transparent 45%),
+        radial-gradient(ellipse at 70% 20%, rgba(255,122,24,0.25), transparent 40%),
+        radial-gradient(ellipse at 50% 100%, rgba(139,92,255,0.25), transparent 50%);
+    }
+    .phone { max-width: 390px; margin: 0 auto; min-height: 100dvh; padding: 12px 16px 100px; }
+    header { display: flex; align-items: center; justify-content: space-between; padding: 8px 0 16px; }
+    .back { color: var(--muted); text-decoration: none; font-size: 0.9rem; }
+    .title {
+      font-weight: 700; letter-spacing: 0.06em; font-size: 0.95rem;
+      background: linear-gradient(90deg, var(--pink), var(--orange));
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .card {
+      border-radius: 24px; overflow: hidden; border: 1px solid var(--border);
+      background: var(--glass); backdrop-filter: blur(16px);
+      box-shadow: 0 0 40px rgba(255,45,149,0.15);
+    }
+    .photo {
+      height: 420px; background:
+        linear-gradient(180deg, transparent 50%, rgba(11,15,26,0.95)),
+        linear-gradient(135deg, #3a1a4a, #1a3a4a 50%, #4a1a3a);
+      position: relative; display: flex; align-items: flex-end; padding: 20px;
+    }
+    .photo::after {
+      content: "PHOTO"; position: absolute; inset: 0; display: grid; place-items: center;
+      font-size: 0.75rem; letter-spacing: 0.2em; color: rgba(255,255,255,0.25); pointer-events: none;
+    }
+    .meta h2 { font-size: 1.5rem; font-weight: 700; position: relative; z-index: 1; }
+    .meta p { color: var(--muted); font-size: 0.9rem; margin-top: 4px; position: relative; z-index: 1; }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; position: relative; z-index: 1; }
+    .tag {
+      font-size: 0.7rem; font-weight: 600; padding: 4px 10px; border-radius: 999px;
+      background: rgba(139,92,255,0.3); border: 1px solid rgba(139,92,255,0.5); color: #e8deff;
+    }
+    .actions {
+      display: flex; justify-content: center; align-items: center; gap: 28px;
+      margin-top: 28px;
+    }
+    .btn {
+      border: none; cursor: pointer; border-radius: 50%;
+      display: grid; place-items: center; font-weight: 700;
+    }
+    .btn.pass {
+      width: 64px; height: 64px; font-size: 1.4rem;
+      background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: var(--cyan);
+      box-shadow: 0 0 20px rgba(45,226,230,0.2);
+    }
+    .btn.smash {
+      width: 80px; height: 80px; font-size: 1.6rem; color: #fff;
+      background: linear-gradient(135deg, var(--pink), var(--orange));
+      box-shadow: 0 8px 32px rgba(255,45,149,0.5);
+    }
+    .hint { text-align: center; color: var(--muted); font-size: 0.8rem; margin-top: 18px; }
+    .toast {
+      margin-top: 20px; padding: 12px 16px; border-radius: 12px;
+      background: rgba(182,255,59,0.12); border: 1px solid rgba(182,255,59,0.35);
+      color: var(--lime); font-size: 0.85rem; text-align: center;
+    }
+    nav.bottom {
+      position: fixed; left: 50%; transform: translateX(-50%); bottom: 0;
+      width: min(390px, 100%); display: flex; justify-content: space-around;
+      padding: 10px 8px calc(10px + env(safe-area-inset-bottom));
+      background: rgba(11,15,26,0.85); border-top: 1px solid var(--border);
+      backdrop-filter: blur(20px);
+    }
+    nav.bottom a {
+      text-decoration: none; color: var(--muted); font-size: 0.65rem;
+      display: flex; flex-direction: column; align-items: center; gap: 4px; font-weight: 500;
+    }
+    nav.bottom a.active { color: var(--pink); }
+    nav.bottom .ni { font-size: 1.2rem; }
+      .photo.has-img { background-size: cover; background-position: center; }
+    .photo.has-img::after { content: none; }
+    .meta .bio { color: #e6e9f5; font-size: 0.85rem; margin-top: 8px; line-height: 1.4; max-height: 4.2em; overflow: hidden; }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .toast { display: none; }
+    .toast.show { display: block; }
+    .toast.match { background: rgba(255,45,149,0.15); border-color: rgba(255,45,149,0.5); color: #ffd1e8; }
+    .toast a { color: var(--cyan); font-weight: 700; text-decoration: none; }
+    .empty { text-align: center; padding: 60px 20px; color: var(--muted); }
+    .empty .big { font-size: 2.4rem; margin-bottom: 10px; }
+    .card.swipe-l { transform: translateX(-120%) rotate(-12deg); opacity: 0; transition: .3s; }
+    .card.swipe-r { transform: translateX(120%) rotate(12deg); opacity: 0; transition: .3s; }
+    .report { display:block; margin: 14px auto 0; background:none; border:none; color: var(--muted); font-size: 0.75rem; cursor:pointer; text-decoration: underline; font-family: inherit; }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <header>
+      <a class="back" href="index.html">← Home</a>
+      <div class="title">SMASH OR PASS</div>
+      <a class="back" href="matches.html" title="Your matches">💬</a>
+    </header>
+
+    <div id="status"></div>
+
+    <div id="deck" style="display:none">
+      <div class="card" id="card">
+        <div class="photo" id="card-photo">
+          <div class="meta">
+            <h2 id="card-name"></h2>
+            <p id="card-sub"></p>
+            <div class="tags" id="card-tags"></div>
+            <div class="bio" id="card-bio"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn pass" type="button" title="Pass" id="btn-pass">✕</button>
+        <button class="btn smash" type="button" title="Smash" id="btn-smash">🔥</button>
+      </div>
+      <p class="hint">Smash is private · Mutual smash unlocks DMs</p>
+      <button class="report" type="button" id="btn-report">Report this profile</button>
+    </div>
+    <div class="toast" id="toast"></div>
+  </div>
+
+  <nav class="bottom">
+    <a href="smash-or-pass.html" class="active"><span class="ni">🔥</span>Smash</a>
+    <a href="matches.html"><span class="ni">💬</span>Matches</a>
+    <a href="rooms.html"><span class="ni">🚪</span>Rooms</a>
+    <a href="profile.html"><span class="ni">👤</span>Profile</a>
+    <a href="index.html"><span class="ni">🏠</span>Home</a>
+  </nav>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="auth.js"></script>
+  <script src="sparks.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const status = $('status');
+    let me = null, queue = [], current = null, busy = false;
+
+    function toast(html, kind) {
+      const t = $('toast');
+      t.className = 'toast show ' + (kind || '');
+      t.innerHTML = html;
+      clearTimeout(toast._t);
+      if (kind !== 'match') toast._t = setTimeout(() => { t.className = 'toast'; }, 2600);
+    }
+
+    function showEmpty() {
+      $('deck').style.display = 'none';
+      status.innerHTML = '<div class="empty"><div class="big">✨</div>You have seen everyone for now.<br>Check back soon — new people join all the time.<br><br><a class="sp-btn ghost small" href="matches.html">See your matches</a></div>';
+    }
+
+    function render() {
+      current = queue.shift();
+      if (!current) return showEmpty();
+      const p = current;
+      const card = $('card');
+      card.classList.remove('swipe-l', 'swipe-r');
+      const ph = $('card-photo');
+      if (p.avatar_url) {
+        ph.classList.add('has-img');
+        ph.style.backgroundImage = 'linear-gradient(180deg, transparent 50%, rgba(11,15,26,0.95)), url("' + encodeURI(p.avatar_url) + '")';
+      } else {
+        ph.classList.remove('has-img');
+        ph.style.backgroundImage = '';
+      }
+      $('card-name').innerHTML = Sparks.nameHtml(p) + (p.age ? ', ' + Sparks.esc(p.age) : '');
+      $('card-sub').textContent = [p.city, p.gender].filter(Boolean).join(' · ') || 'Somewhere nearby';
+      const tags = [];
+      if (p.looking_for) tags.push('Into ' + p.looking_for);
+      if (p.is_admin) tags.push('Sparks team');
+      $('card-tags').innerHTML = tags.map((t) => '<span class="tag">' + Sparks.esc(t) + '</span>').join('');
+      $('card-bio').textContent = p.bio || '';
+      $('deck').style.display = 'block';
+    }
+
+    async function load() {
+      const { data, error } = await Sparks.client().rpc('discover_profiles', { max_rows: 20 });
+      if (error) { $('deck').style.display = 'none'; return Sparks.showError(status, error); }
+      queue = data || [];
+      render();
+    }
+
+    async function swipe(isLike) {
+      if (!current || busy) return;
+      busy = true;
+      $('btn-pass').disabled = $('btn-smash').disabled = true;
+      const target = current;
+      const sb = Sparks.client();
+      const { error } = await sb.from('likes').upsert(
+        { liker: me.id, likee: target.id, is_like: isLike },
+        { onConflict: 'liker,likee' }
+      );
+      if (error) {
+        busy = false;
+        $('btn-pass').disabled = $('btn-smash').disabled = false;
+        return toast(Sparks.esc(Sparks.isMissingSchema(error) ? Sparks.SETUP_MSG : error.message), '');
+      }
+      $('card').classList.add(isLike ? 'swipe-r' : 'swipe-l');
+      if (isLike) {
+        const a = me.id < target.id ? me.id : target.id;
+        const b = me.id < target.id ? target.id : me.id;
+        const { data: m } = await sb.from('matches').select('id').eq('user_a', a).eq('user_b', b).maybeSingle();
+        if (m) toast('⚡ It’s a match with ' + Sparks.nameHtml(target) + '! <a href="dm-thread.html?match=' + m.id + '">Say hi →</a>', 'match');
+        else toast('You smashed ' + Sparks.nameHtml(target) + ' — if they smash back, DMs unlock ⚡');
+      }
+      setTimeout(async () => {
+        busy = false;
+        $('btn-pass').disabled = $('btn-smash').disabled = false;
+        if (!queue.length) await load(); else render();
+      }, 320);
+    }
+
+    $('btn-pass').addEventListener('click', () => swipe(false));
+    $('btn-smash').addEventListener('click', () => swipe(true));
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') swipe(false);
+      if (e.key === 'ArrowRight') swipe(true);
+    });
+    $('btn-report').addEventListener('click', async () => {
+      if (!current) return;
+      const reason = prompt('Why are you reporting ' + Sparks.displayName(current) + '?');
+      if (!reason || !reason.trim()) return;
+      const { error } = await Sparks.client().from('reports').insert({ reporter: me.id, reported: current.id, reason: reason.trim().slice(0, 1000) });
+      if (error) return toast(Sparks.esc(Sparks.isMissingSchema(error) ? Sparks.SETUP_MSG : error.message));
+      toast('Thanks — our team will review this profile.');
+      swipe(false);
+    });
+
+    (async () => {
+      const session = await Sparks.requireSession(status);
+      if (!session) return;
+      me = session.user;
+      const res = await Sparks.myProfile(me.id);
+      if (res.missing) return Sparks.notice(status, Sparks.esc(Sparks.SETUP_MSG));
+      if (res.profile && res.profile.is_banned) return Sparks.notice(status, 'Your account is suspended.', 'err');
+      if (res.profile && !res.profile.avatar_url && !res.profile.is_admin) {
+        Sparks.notice(status, 'Tip: profiles with a photo get way more smashes. <a href="profile.html">Add yours →</a>');
+      }
+      load();
+    })();
+  </script>
+</body>
+</html>

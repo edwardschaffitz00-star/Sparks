@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Sparks — Thread</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="app.css" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Inter, system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100dvh; }
+    .phone { max-width: 390px; margin: 0 auto; min-height: 100dvh; padding: 12px 16px 88px; }
+    header { display: flex; align-items: center; justify-content: space-between; padding: 8px 0 16px; }
+    .back { color: var(--muted); text-decoration: none; }
+    .title { font-weight: 700; }
+    .bubble { max-width: 80%; padding: 10px 12px; border-radius: 14px; margin: 8px 0; white-space: pre-wrap; }
+    .me { margin-left: auto; background: linear-gradient(135deg, var(--violet), var(--pink)); }
+    .them { background: var(--glass); border: 1px solid var(--border); }
+    .when { font-size: 0.68rem; color: var(--muted); margin-top: 4px; }
+    .composer { position: fixed; left: 50%; transform: translateX(-50%); bottom: 0; width: min(390px, 100%); display: flex; gap: 8px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); background: rgba(11,15,26,0.9); border-top: 1px solid var(--border); }
+    .composer input { flex: 1; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: rgba(0,0,0,0.3); color: #fff; font: inherit; }
+    .composer button { border: 0; border-radius: 12px; padding: 0 14px; font-weight: 700; background: var(--violet); color: #fff; }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <header>
+      <a class="back" href="matches.html">← Matches</a>
+      <div class="title" id="who">Thread</div>
+      <span></span>
+    </header>
+    <div id="status"></div>
+    <div id="thread"></div>
+  </div>
+  <form class="composer" id="form">
+    <input id="body" maxlength="2000" placeholder="Message…" autocomplete="off" />
+    <button type="submit">Send</button>
+  </form>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="auth.js"></script>
+  <script src="sparks.js"></script>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const matchId = params.get('match');
+    const status = document.getElementById('status');
+    const thread = document.getElementById('thread');
+
+    (async () => {
+      const session = await Sparks.requireSession(status);
+      if (!session) return;
+      if (!matchId) { Sparks.notice(status, 'Missing match id.', 'err'); return; }
+      const me = session.user.id;
+      const sb = Sparks.client();
+      const { data: m, error: meErr } = await sb.from('matches').select('*').eq('id', matchId).maybeSingle();
+      if (meErr) return Sparks.showError(status, meErr);
+      if (!m) { Sparks.notice(status, 'Thread not found.', 'err'); return; }
+      const otherId = m.user_a === me ? m.user_b : m.user_a;
+      const people = await Sparks.profilesByIds([otherId]);
+      document.getElementById('who').textContent = Sparks.displayName(people[otherId]);
+
+      async function load() {
+        const { data, error } = await sb.from('messages').select('*').eq('match_id', matchId).order('created_at', { ascending: true }).limit(400);
+        if (error) return Sparks.showError(status, error);
+        thread.innerHTML = (data || []).map((msg) =>
+          '<div class="bubble ' + (msg.sender === me ? 'me' : 'them') + '">' + Sparks.esc(msg.body) +
+          '<div class="when">' + Sparks.timeAgo(msg.created_at) + '</div></div>'
+        ).join('') || '<p class="muted">No messages yet.</p>';
+        window.scrollTo(0, document.body.scrollHeight);
+      }
+      await load();
+
+      document.getElementById('form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const body = document.getElementById('body').value.trim();
+        if (!body) return;
+        const { error } = await sb.from('messages').insert({ match_id: matchId, sender: me, body });
+        if (error) return Sparks.showError(status, error);
+        document.getElementById('body').value = '';
+        await load();
+      });
+    })();
+  </script>
+</body>
+</html>
